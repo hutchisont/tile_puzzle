@@ -1,13 +1,31 @@
 package tile_puzzle
 
+import "core:c"
 import "core:fmt"
 import "core:log"
-// import "vendor:sdl3"
 import "core:mem"
+import "core:os"
 
+import mu "vendor:microui"
+import rl "vendor:raylib"
+
+// Prevent -vet from bitching about these being unused when we're not using the
+// tracking allocator.
 _ :: fmt
 _ :: mem
 
+State := struct {
+	mu_ctx:         mu.Context,
+	bg:             mu.Color,
+	atlas_texture:  rl.RenderTexture2D,
+	screen_width:   c.int,
+	screen_height:  c.int,
+	screen_texture: rl.RenderTexture2D,
+} {
+	screen_width  = 960,
+	screen_height = 960,
+	bg            = {100, 149, 237, 255},
+}
 
 main :: proc() {
 	when ODIN_DEBUG {
@@ -33,5 +51,22 @@ main :: proc() {
 	}
 
 	context.logger = log.create_console_logger(lowest = log.Level.Info)
-	log.info("checking")
+
+	rl.SetTraceLogLevel(.ERROR)
+	rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT})
+
+	rl.InitWindow(State.screen_width, State.screen_height, "Tile Puzzle")
+	defer rl.CloseWindow()
+
+	rl.SetTargetFPS(144)
+
+	ctx := &State.mu_ctx
+	mu.init(ctx)
+
+	State.screen_texture = rl.LoadRenderTexture(State.screen_width, State.screen_height)
+	defer rl.UnloadRenderTexture(State.screen_texture)
+
+	for !rl.WindowShouldClose() {
+		free_all(context.temp_allocator)
+	}
 }
